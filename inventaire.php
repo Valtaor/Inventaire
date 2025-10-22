@@ -98,8 +98,8 @@ get_header();
                     </svg>
                 </button>
                 <p class="inventory-kicker"><?php esc_html_e('Tableau de bord', 'uncode'); ?></p>
-                <h1 id="inventory-overview-title" class="inventory-title"><?php esc_html_e('Gestion des stocks de Bijoux', 'uncode'); ?></h1>
-                <p class="inventory-subtitle"><?php esc_html_e('Votre assistant intelligent pour suivre vos pièces, marges et fiches à compléter.', 'uncode'); ?></p>
+                <h1 id="inventory-overview-title" class="inventory-title"><?php esc_html_e('Inventaire', 'uncode'); ?></h1>
+                <p class="inventory-subtitle"><?php esc_html_e('Mon assistant intelligent', 'uncode'); ?></p>
             </header>
 
             <div class="inventory-container">
