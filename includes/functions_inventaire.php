@@ -115,9 +115,17 @@ function inventory_add_product()
     ];
 
     // Gestion image
-    if (!empty($_FILES['product-image']['name'])) {
+    $imageField = null;
+    if (!empty($_FILES['image']['name'])) {
+        $imageField = 'image';
+    } elseif (!empty($_FILES['product-image']['name'])) {
+        // Compatibilité avec l'ancien nom de champ
+        $imageField = 'product-image';
+    }
+
+    if ($imageField) {
         require_once ABSPATH . 'wp-admin/includes/file.php';
-        $upload = wp_handle_upload($_FILES['product-image'], ['test_form' => false]);
+        $upload = wp_handle_upload($_FILES[$imageField], ['test_form' => false]);
         if (!isset($upload['error'])) {
             $fields['image'] = $upload['url'];
         } else {
