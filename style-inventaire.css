@@ -159,6 +159,30 @@
   height: 26px;
 }
 
+.mobile-filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--inventory-color-surface-muted);
+  color: var(--inventory-color-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.mobile-filters-toggle:hover {
+  transform: translateY(-2px);
+}
+
+.mobile-filters-toggle svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
 .inventory-form {
   display: flex;
   flex-direction: column;
