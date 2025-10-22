@@ -28,6 +28,19 @@
     var photoInput = document.getElementById('product-image');
     var imagePreview = document.getElementById('image-preview');
     var previewContainer = document.getElementById('photoPreviewContainer');
+    var cancelEditButton = document.getElementById('cancel-edit');
+    var productIdInput = document.getElementById('product-id');
+    var existingImageInput = document.getElementById('product-existing-image');
+    var nameInput = document.getElementById('product-name');
+    var referenceInput = document.getElementById('product-reference');
+    var locationInput = document.getElementById('product-location');
+    var stockInput = document.getElementById('product-stock');
+    var purchaseInput = document.getElementById('product-prix-achat');
+    var saleInput = document.getElementById('product-prix-vente');
+    var dateInput = document.getElementById('product-date');
+    var notesInput = document.getElementById('product-notes');
+    var descriptionInput = document.getElementById('product-description');
+    var incompleteInput = document.getElementById('product-incomplete');
 
     var uploadsUrl = settings.uploadsUrl || '';
     var i18n = settings.i18n || {};
@@ -40,6 +53,8 @@
     var allProducts = [];
     var filteredProducts = [];
     var currentPreviewUrl = null;
+    var formMode = 'create';
+    var currentEditId = null;
     var filterState = {
       quickStatus: 'all',
       casier: 'all',
@@ -140,6 +155,16 @@
       }
       return value;
     }
+
+    function setSubmitButtonLabel(isEdit) {
+      if (!submitButton) {
+        return;
+      }
+      var label = isEdit ? (i18n.updateLabel || 'Mettre à jour le produit') : (i18n.submitLabel || 'Ajouter à l\'inventaire');
+      submitButton.textContent = label;
+    }
+
+    setSubmitButtonLabel(false);
 
     function updateEmptyState(list) {
       if (!emptyState) {
@@ -289,6 +314,14 @@
 
         var actionsCell = document.createElement('td');
         actionsCell.className = 'inventory-cell-actions';
+
+        var editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'inventory-action-btn';
+        editButton.dataset.action = 'edit';
+        editButton.dataset.id = product.id;
+        editButton.textContent = i18n.editLabel || 'Modifier';
+        actionsCell.appendChild(editButton);
 
         var toggleButton = document.createElement('button');
         toggleButton.type = 'button';
@@ -509,11 +542,27 @@
         return;
       }
       event.preventDefault();
+      var isEditing = formMode === 'edit';
       var formData = new FormData(form);
-      formData.append('action', 'add_product');
+      formData.append('action', isEditing ? 'edit_product' : 'add_product');
+
+      if (isEditing) {
+        var editId = currentEditId || (productIdInput ? productIdInput.value : '');
+        if (!editId) {
+          showToast(i18n.toastEditError || 'Erreur lors de la mise à jour du produit.', 'error');
+          return;
+        }
+        formData.append('id', editId);
+        if (existingImageInput) {
+          formData.append('existing_image', existingImageInput.value || '');
+        }
+      }
 
       if (submitButton) {
         submitButton.disabled = true;
+      }
+      if (cancelEditButton && isEditing) {
+        cancelEditButton.disabled = true;
       }
 
       fetch(ajaxUrl, {
@@ -532,16 +581,22 @@
             throw new Error((json && json.data && json.data.message) || 'Erreur');
           }
           form.reset();
+          exitEditMode();
           resetPreview();
-          showToast(i18n.toastAddSuccess || 'Produit ajouté avec succès.', 'success');
+          var successMessage = isEditing ? (i18n.toastEditSuccess || 'Produit mis à jour.') : (i18n.toastAddSuccess || 'Produit ajouté avec succès.');
+          showToast(successMessage, 'success');
           return fetchProducts();
         })
         .catch(function (error) {
-          showToast((i18n.toastAddError || 'Erreur lors de l\'ajout du produit.') + ' ' + (error && error.message ? error.message : ''), 'error');
+          var failureMessage = isEditing ? (i18n.toastEditError || 'Erreur lors de la mise à jour du produit.') : (i18n.toastAddError || 'Erreur lors de l\'ajout du produit.');
+          showToast(failureMessage + ' ' + (error && error.message ? error.message : ''), 'error');
         })
         .finally(function () {
           if (submitButton) {
             submitButton.disabled = false;
+          }
+          if (cancelEditButton) {
+            cancelEditButton.disabled = false;
           }
         });
     }
@@ -560,9 +615,93 @@
       }
     }
 
+    function exitEditMode() {
+      formMode = 'create';
+      currentEditId = null;
+      if (productIdInput) {
+        productIdInput.value = '';
+      }
+      if (existingImageInput) {
+        existingImageInput.value = '';
+      }
+      setSubmitButtonLabel(false);
+      if (cancelEditButton) {
+        cancelEditButton.hidden = true;
+        cancelEditButton.disabled = false;
+      }
+    }
+
+    function startEditing(product) {
+      if (!product || !form) {
+        return;
+      }
+      formMode = 'edit';
+      currentEditId = product.id;
+      if (cancelEditButton) {
+        cancelEditButton.hidden = false;
+        cancelEditButton.disabled = false;
+      }
+      form.reset();
+      resetPreview();
+      if (productIdInput) {
+        productIdInput.value = product.id ? String(product.id) : '';
+      }
+      if (nameInput) {
+        nameInput.value = product.nom || '';
+      }
+      if (referenceInput) {
+        referenceInput.value = product.reference || '';
+      }
+      if (locationInput) {
+        locationInput.value = product.emplacement || '';
+      }
+      if (stockInput) {
+        stockInput.value = product.stock !== null && product.stock !== undefined ? String(product.stock) : '';
+      }
+      if (purchaseInput) {
+        purchaseInput.value = product.prix_achat !== null && product.prix_achat !== undefined ? String(product.prix_achat) : '';
+      }
+      if (saleInput) {
+        saleInput.value = product.prix_vente !== null && product.prix_vente !== undefined ? String(product.prix_vente) : '';
+      }
+      if (dateInput) {
+        dateInput.value = product.date_achat || '';
+      }
+      if (notesInput) {
+        notesInput.value = product.notes || '';
+      }
+      if (descriptionInput) {
+        descriptionInput.value = product.description || '';
+      }
+      if (incompleteInput) {
+        incompleteInput.checked = Number(product.a_completer) === 1;
+      }
+      if (existingImageInput) {
+        existingImageInput.value = product.image ? normalizeImage(product.image) : '';
+      }
+      if (product.image && imagePreview) {
+        imagePreview.src = normalizeImage(product.image);
+        imagePreview.classList.remove('is-empty');
+        if (previewContainer) {
+          previewContainer.classList.add('has-image');
+        }
+      }
+      setSubmitButtonLabel(true);
+      scrollToElement(form);
+      if (nameInput) {
+        window.setTimeout(function () {
+          nameInput.focus();
+          nameInput.select();
+        }, 50);
+      }
+    }
+
     function handlePhotoChange(event) {
       if (!imagePreview) {
         return;
+      }
+      if (existingImageInput) {
+        existingImageInput.value = '';
       }
       if (currentPreviewUrl) {
         URL.revokeObjectURL(currentPreviewUrl);
@@ -622,6 +761,16 @@
         return;
       }
 
+      if (action === 'edit') {
+        var editable = allProducts.find(function (item) {
+          return String(item.id) === String(id);
+        });
+        if (editable) {
+          startEditing(editable);
+        }
+        return;
+      }
+
       if (action === 'delete') {
         var confirmMessage = i18n.deleteConfirm || 'Supprimer cet article ?';
         if (window.confirm(confirmMessage)) {
@@ -645,6 +794,13 @@
                 throw new Error((json && json.data && json.data.message) || 'Erreur');
               }
               showToast(i18n.toastDeleteSuccess || 'Produit supprimé.', 'success');
+              if (currentEditId && String(currentEditId) === String(id)) {
+                if (form) {
+                  form.reset();
+                }
+                resetPreview();
+                exitEditMode();
+              }
               fetchProducts();
             })
             .catch(function (error) {
@@ -661,6 +817,9 @@
           return;
         }
         var nextValue = Number(product.a_completer) === 1 ? 0 : 1;
+        if (currentEditId && String(currentEditId) === String(id) && incompleteInput) {
+          incompleteInput.checked = nextValue === 1;
+        }
         requestUpdate(
           id,
           'a_completer',
@@ -750,6 +909,16 @@
 
     if (photoInput) {
       photoInput.addEventListener('change', handlePhotoChange);
+    }
+
+    if (cancelEditButton) {
+      cancelEditButton.addEventListener('click', function () {
+        if (form) {
+          form.reset();
+        }
+        resetPreview();
+        exitEditMode();
+      });
     }
 
     if (tableBody) {

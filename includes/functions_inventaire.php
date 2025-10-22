@@ -148,6 +148,98 @@ add_action('wp_ajax_add_product', 'inventory_add_product');
 add_action('wp_ajax_nopriv_add_product', 'inventory_add_product');
 
 /**
+ * Édition d’un produit
+ */
+function inventory_edit_product()
+{
+    $pdo = inventory_db_get_pdo();
+    if (!$pdo) {
+        wp_send_json_error(['message' => 'Connexion à la base impossible']);
+    }
+
+    $id = intval($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        wp_send_json_error(['message' => 'Identifiant produit invalide.']);
+    }
+
+    $fields = [
+        'nom'          => sanitize_text_field($_POST['nom'] ?? ''),
+        'reference'    => sanitize_text_field($_POST['reference'] ?? ''),
+        'emplacement'  => sanitize_text_field($_POST['emplacement'] ?? ''),
+        'prix_achat'   => floatval($_POST['prix_achat'] ?? 0),
+        'prix_vente'   => floatval($_POST['prix_vente'] ?? 0),
+        'stock'        => intval($_POST['stock'] ?? 0),
+        'a_completer'  => isset($_POST['a_completer']) ? 1 : 0,
+        'notes'        => sanitize_textarea_field($_POST['notes'] ?? ''),
+        'description'  => sanitize_textarea_field($_POST['description'] ?? ''),
+        'date_achat'   => sanitize_text_field($_POST['date_achat'] ?? ''),
+        'image'        => null,
+    ];
+
+    $existingImage = esc_url_raw($_POST['existing_image'] ?? '');
+
+    $imageField = null;
+    if (!empty($_FILES['image']['name'])) {
+        $imageField = 'image';
+    } elseif (!empty($_FILES['product-image']['name'])) {
+        $imageField = 'product-image';
+    }
+
+    if ($imageField) {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        $upload = wp_handle_upload($_FILES[$imageField], ['test_form' => false]);
+        if (!isset($upload['error'])) {
+            $fields['image'] = $upload['url'];
+        } else {
+            wp_send_json_error(['message' => 'Erreur upload image : ' . $upload['error']]);
+        }
+    } elseif (!empty($existingImage)) {
+        $fields['image'] = $existingImage;
+    }
+
+    if ($fields['date_achat'] === '') {
+        $fields['date_achat'] = null;
+    }
+
+    try {
+        $sql = "UPDATE {$GLOBALS['wpdb']->prefix}inventaire
+                SET nom = :nom,
+                    reference = :reference,
+                    emplacement = :emplacement,
+                    prix_achat = :prix_achat,
+                    prix_vente = :prix_vente,
+                    stock = :stock,
+                    a_completer = :a_completer,
+                    notes = :notes,
+                    description = :description,
+                    date_achat = :date_achat,
+                    image = :image
+                WHERE id = :id";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':nom' => $fields['nom'],
+            ':reference' => $fields['reference'],
+            ':emplacement' => $fields['emplacement'],
+            ':prix_achat' => $fields['prix_achat'],
+            ':prix_vente' => $fields['prix_vente'],
+            ':stock' => $fields['stock'],
+            ':a_completer' => $fields['a_completer'],
+            ':notes' => $fields['notes'],
+            ':description' => $fields['description'],
+            ':date_achat' => $fields['date_achat'],
+            ':image' => $fields['image'],
+            ':id' => $id,
+        ]);
+
+        wp_send_json_success(['id' => $id]);
+    } catch (PDOException $e) {
+        wp_send_json_error(['message' => 'Erreur base de données : ' . $e->getMessage()]);
+    }
+}
+add_action('wp_ajax_edit_product', 'inventory_edit_product');
+
+/**
  * Mise à jour d’un champ produit
  */
 function inventory_update_product()
