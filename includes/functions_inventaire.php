@@ -74,6 +74,17 @@ function inventory_get_products()
 
     $stmt = $pdo->query("SELECT * FROM {$GLOBALS['wpdb']->prefix}inventaire ORDER BY id DESC");
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if ($data) {
+        $upload_dir = wp_get_upload_dir();
+        foreach ($data as &$product) {
+            if (!empty($product['image']) && !preg_match('#^https?://#', $product['image'])) {
+                $product['image'] = trailingslashit($upload_dir['baseurl']) . ltrim($product['image'], '/');
+            }
+        }
+        unset($product);
+    }
+
     wp_send_json_success($data);
 }
 add_action('wp_ajax_get_products', 'inventory_get_products');
@@ -108,7 +119,7 @@ function inventory_add_product()
         require_once ABSPATH . 'wp-admin/includes/file.php';
         $upload = wp_handle_upload($_FILES['product-image'], ['test_form' => false]);
         if (!isset($upload['error'])) {
-            $fields['image'] = basename($upload['file']);
+            $fields['image'] = $upload['url'];
         } else {
             wp_send_json_error(['message' => 'Erreur upload image : ' . $upload['error']]);
         }
