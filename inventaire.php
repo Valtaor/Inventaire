@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$assetVersion = '3.0.0';
+$assetVersion = '3.1.0';
 
 $uploadDir = wp_upload_dir();
 $inventoryUploadsUrl = '';
@@ -48,6 +48,8 @@ wp_localize_script(
             'toastDeleteError' => __('Suppression impossible.', 'uncode'),
             'toastUpdateSuccess' => __('Valeur mise à jour.', 'uncode'),
             'toastUpdateError' => __('Mise à jour impossible.', 'uncode'),
+            'toastEditSuccess' => __('Produit mis à jour.', 'uncode'),
+            'toastEditError' => __('Erreur lors de la mise à jour du produit.', 'uncode'),
             'toggleIncomplete' => __('Marquer comme à compléter', 'uncode'),
             'toggleComplete' => __('Marquer comme complet', 'uncode'),
             'deleteConfirm' => __('Supprimer cet article ?', 'uncode'),
@@ -71,6 +73,8 @@ wp_localize_script(
             'markedIncomplete' => __('Objet marqué à compléter.', 'uncode'),
             'markedComplete' => __('Objet marqué complet.', 'uncode'),
             'submitLabel' => __('Ajouter à l\'inventaire', 'uncode'),
+            'updateLabel' => __('Mettre à jour le produit', 'uncode'),
+            'editLabel' => __('Modifier', 'uncode'),
         ],
     ]
 );
@@ -98,8 +102,8 @@ get_header();
                     </svg>
                 </button>
                 <p class="inventory-kicker"><?php esc_html_e('Tableau de bord', 'uncode'); ?></p>
-                <h1 id="inventory-overview-title" class="inventory-title"><?php esc_html_e('Gestion des stocks de Bijoux', 'uncode'); ?></h1>
-                <p class="inventory-subtitle"><?php esc_html_e('Votre assistant intelligent pour suivre vos pièces, marges et fiches à compléter.', 'uncode'); ?></p>
+                <h1 id="inventory-overview-title" class="inventory-title"><?php esc_html_e('Inventaire', 'uncode'); ?></h1>
+                <p class="inventory-subtitle"><?php esc_html_e('Mon assistant intelligent', 'uncode'); ?></p>
             </header>
 
             <div class="inventory-container">
@@ -111,6 +115,8 @@ get_header();
                         <?php esc_html_e('Ajouter un objet', 'uncode'); ?>
                     </h2>
                     <form id="inventory-form" class="inventory-form" enctype="multipart/form-data" method="post">
+                        <input type="hidden" id="product-id" value="" />
+                        <input type="hidden" id="product-existing-image" value="" />
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="product-image" class="form-label"><?php esc_html_e('Photo', 'uncode'); ?></label>
