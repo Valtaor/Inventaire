@@ -70,6 +70,7 @@ function inventory_get_products()
     $pdo = inventory_db_get_pdo();
     if (!$pdo) {
         wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
     }
 
     $stmt = $pdo->query("SELECT * FROM {$GLOBALS['wpdb']->prefix}inventaire ORDER BY id DESC");
@@ -86,6 +87,7 @@ function inventory_get_products()
     }
 
     wp_send_json_success($data);
+    return;
 }
 add_action('wp_ajax_get_products', 'inventory_get_products');
 add_action('wp_ajax_nopriv_get_products', 'inventory_get_products');
@@ -98,6 +100,7 @@ function inventory_add_product()
     $pdo = inventory_db_get_pdo();
     if (!$pdo) {
         wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
     }
 
     $fields = [
@@ -130,18 +133,21 @@ function inventory_add_product()
             $fields['image'] = $upload['url'];
         } else {
             wp_send_json_error(['message' => 'Erreur upload image : ' . $upload['error']]);
+            return;
         }
     }
 
     try {
-        $sql = "INSERT INTO {$GLOBALS['wpdb']->prefix}inventaire 
+        $sql = "INSERT INTO {$GLOBALS['wpdb']->prefix}inventaire
                 (nom, reference, emplacement, prix_achat, prix_vente, stock, a_completer, notes, description, date_achat, image)
                 VALUES (:nom, :reference, :emplacement, :prix_achat, :prix_vente, :stock, :a_completer, :notes, :description, :date_achat, :image)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($fields);
         wp_send_json_success(['id' => $pdo->lastInsertId()]);
+        return;
     } catch (PDOException $e) {
         wp_send_json_error(['message' => 'Erreur base de données : ' . $e->getMessage()]);
+        return;
     }
 }
 add_action('wp_ajax_add_product', 'inventory_add_product');
@@ -155,11 +161,13 @@ function inventory_edit_product()
     $pdo = inventory_db_get_pdo();
     if (!$pdo) {
         wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
     }
 
     $id = intval($_POST['id'] ?? 0);
     if ($id <= 0) {
         wp_send_json_error(['message' => 'Identifiant produit invalide.']);
+        return;
     }
 
     $fields = [
@@ -192,6 +200,7 @@ function inventory_edit_product()
             $fields['image'] = $upload['url'];
         } else {
             wp_send_json_error(['message' => 'Erreur upload image : ' . $upload['error']]);
+            return;
         }
     } elseif (!empty($existingImage)) {
         $fields['image'] = $existingImage;
@@ -233,8 +242,10 @@ function inventory_edit_product()
         ]);
 
         wp_send_json_success(['id' => $id]);
+        return;
     } catch (PDOException $e) {
         wp_send_json_error(['message' => 'Erreur base de données : ' . $e->getMessage()]);
+        return;
     }
 }
 add_action('wp_ajax_edit_product', 'inventory_edit_product');
@@ -250,16 +261,19 @@ function inventory_update_product()
 
     if ($id <= 0 || !$field) {
         wp_send_json_error(['message' => 'Paramètres invalides.']);
+        return;
     }
 
     $pdo = inventory_db_get_pdo();
     if (!$pdo) {
         wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
     }
 
     $allowed = ['nom', 'reference', 'emplacement', 'prix_achat', 'prix_vente', 'stock', 'a_completer', 'notes', 'description', 'date_achat'];
     if (!in_array($field, $allowed, true)) {
         wp_send_json_error(['message' => 'Champ non autorisé.']);
+        return;
     }
 
     try {
@@ -267,8 +281,10 @@ function inventory_update_product()
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':value' => $value, ':id' => $id]);
         wp_send_json_success(['field' => $field, 'value' => $value]);
+        return;
     } catch (PDOException $e) {
         wp_send_json_error(['message' => 'Erreur base de données : ' . $e->getMessage()]);
+        return;
     }
 }
 add_action('wp_ajax_update_product', 'inventory_update_product');
@@ -281,11 +297,13 @@ function inventory_delete_product()
     $id = intval($_POST['id'] ?? 0);
     if ($id <= 0) {
         wp_send_json_error(['message' => 'ID invalide.']);
+        return;
     }
 
     $pdo = inventory_db_get_pdo();
     if (!$pdo) {
         wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
     }
 
     try {
@@ -293,8 +311,10 @@ function inventory_delete_product()
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':id' => $id]);
         wp_send_json_success(['deleted' => $id]);
+        return;
     } catch (PDOException $e) {
         wp_send_json_error(['message' => 'Erreur base de données : ' . $e->getMessage()]);
+        return;
     }
 }
 add_action('wp_ajax_delete_product', 'inventory_delete_product');
