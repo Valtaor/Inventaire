@@ -1001,3 +1001,94 @@
   width: 16px;
   height: 16px;
 }
+
+/* Section historique des ventes */
+.card-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.sales-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--inventory-color-surface-muted);
+  border-radius: var(--inventory-radius-md);
+  border: 1px solid var(--inventory-color-border);
+}
+
+.sales-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sales-table th {
+  white-space: nowrap;
+}
+
+.sales-table td {
+  vertical-align: middle;
+}
+
+.platform-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.platform-badge.ebay {
+  background: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+}
+
+.platform-badge.lbc {
+  background: rgba(255, 87, 34, 0.15);
+  color: #ff5722;
+}
+
+.platform-badge.vinted {
+  background: rgba(33, 150, 243, 0.15);
+  color: #1976d2;
+}
+
+.platform-badge.autre {
+  background: rgba(156, 39, 176, 0.15);
+  color: #7b1fa2;
+}
+
+.margin-positive {
+  color: var(--inventory-color-success);
+  font-weight: 600;
+}
+
+.margin-negative {
+  color: var(--inventory-color-danger);
+  font-weight: 600;
+}
+
+@media (max-width: 992px) {
+  .card-header-with-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sales-filters {
+    grid-template-columns: 1fr;
+  }
+}

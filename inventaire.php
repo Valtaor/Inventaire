@@ -326,6 +326,91 @@ get_header();
                         </div>
                     </div>
                 </section>
+
+                <!-- Section Historique des ventes -->
+                <section class="card" id="salesHistoryCard">
+                    <div class="card-header-with-actions">
+                        <h2 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                            </svg>
+                            <?php esc_html_e('Historique des ventes', 'uncode'); ?>
+                        </h2>
+                        <div class="card-actions">
+                            <button type="button" class="secondary" id="export-sales-csv">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                                <?php esc_html_e('Exporter CSV', 'uncode'); ?>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtres -->
+                    <div class="sales-filters">
+                        <div class="form-group">
+                            <label for="filterSalesPlatform" class="form-label"><?php esc_html_e('Plateforme', 'uncode'); ?></label>
+                            <select id="filterSalesPlatform" class="form-control">
+                                <option value=""><?php esc_html_e('Toutes les plateformes', 'uncode'); ?></option>
+                                <option value="ebay">eBay</option>
+                                <option value="lbc">LeBonCoin</option>
+                                <option value="vinted">Vinted</option>
+                                <option value="autre">Autre</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filterSalesDateStart" class="form-label"><?php esc_html_e('Du', 'uncode'); ?></label>
+                            <input type="date" id="filterSalesDateStart" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="filterSalesDateEnd" class="form-label"><?php esc_html_e('Au', 'uncode'); ?></label>
+                            <input type="date" id="filterSalesDateEnd" class="form-control" />
+                        </div>
+                    </div>
+
+                    <!-- Statistiques des ventes -->
+                    <div class="sales-stats-grid">
+                        <div class="stat-card">
+                            <h3><?php esc_html_e('Ventes totales', 'uncode'); ?></h3>
+                            <div class="value" id="stat-sales-count">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><?php esc_html_e('Articles vendus', 'uncode'); ?></h3>
+                            <div class="value" id="stat-sales-quantity">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><?php esc_html_e('Chiffre d\'affaires', 'uncode'); ?></h3>
+                            <div class="value" id="stat-sales-revenue">0,00 €</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3><?php esc_html_e('Marge nette', 'uncode'); ?></h3>
+                            <div class="value" id="stat-sales-margin">0,00 €</div>
+                        </div>
+                    </div>
+
+                    <!-- Tableau des ventes -->
+                    <div class="table-wrapper">
+                        <table class="inventory-table sales-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><?php esc_html_e('Date', 'uncode'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Produit', 'uncode'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Qté', 'uncode'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Plateforme', 'uncode'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Prix vente', 'uncode'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Frais', 'uncode'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Marge', 'uncode'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Actions', 'uncode'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-table-body"></tbody>
+                        </table>
+                        <div class="empty-state" id="empty-sales-state" style="display: none;">
+                            <h3><?php esc_html_e('Aucune vente enregistrée.', 'uncode'); ?></h3>
+                            <p><?php esc_html_e('Cliquez sur "Vendu" à côté d\'un produit pour enregistrer une vente !', 'uncode'); ?></p>
+                        </div>
+                    </div>
+                </section>
             </div>
 
             <nav class="mobile-action-bar" id="mobileActionBar" aria-label="<?php esc_attr_e('Actions rapides', 'uncode'); ?>">
