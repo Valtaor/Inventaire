@@ -290,6 +290,29 @@
   border: 1px solid var(--inventory-color-border);
 }
 
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.price-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.price-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--inventory-color-text-muted);
+}
+
 .follow-up-hint {
   display: flex;
   align-items: flex-start;

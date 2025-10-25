@@ -49,6 +49,10 @@ function inventory_db_ensure_table()
         emplacement VARCHAR(255) DEFAULT NULL,
         prix_achat DECIMAL(10,2) DEFAULT 0,
         prix_vente DECIMAL(10,2) DEFAULT 0,
+        prix_vente_ebay DECIMAL(10,2) DEFAULT NULL,
+        prix_vente_lbc DECIMAL(10,2) DEFAULT NULL,
+        prix_vente_vinted DECIMAL(10,2) DEFAULT NULL,
+        prix_vente_autre DECIMAL(10,2) DEFAULT NULL,
         stock INT DEFAULT 0,
         a_completer TINYINT(1) DEFAULT 0,
         notes TEXT,
@@ -60,6 +64,42 @@ function inventory_db_ensure_table()
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta($sql);
+
+    // Migration : Ajouter les colonnes de prix par plateforme si elles n'existent pas
+    inventory_db_migrate_price_columns();
+}
+
+/**
+ * Migration : Ajoute les colonnes de prix par plateforme si elles n'existent pas
+ */
+function inventory_db_migrate_price_columns()
+{
+    global $wpdb;
+    $table = $wpdb->prefix . 'inventaire';
+
+    // Vérifier si la table existe
+    $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+    if (!$table_exists) {
+        return;
+    }
+
+    // Liste des nouvelles colonnes à ajouter
+    $new_columns = [
+        'prix_vente_ebay' => 'DECIMAL(10,2) DEFAULT NULL AFTER prix_vente',
+        'prix_vente_lbc' => 'DECIMAL(10,2) DEFAULT NULL AFTER prix_vente_ebay',
+        'prix_vente_vinted' => 'DECIMAL(10,2) DEFAULT NULL AFTER prix_vente_lbc',
+        'prix_vente_autre' => 'DECIMAL(10,2) DEFAULT NULL AFTER prix_vente_vinted',
+    ];
+
+    foreach ($new_columns as $column => $definition) {
+        // Vérifier si la colonne existe déjà
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE '$column'");
+
+        if (empty($column_exists)) {
+            // Ajouter la colonne
+            $wpdb->query("ALTER TABLE $table ADD COLUMN $column $definition");
+        }
+    }
 }
 
 /**
@@ -104,17 +144,21 @@ function inventory_add_product()
     }
 
     $fields = [
-        'nom'          => sanitize_text_field($_POST['nom'] ?? ''),
-        'reference'    => sanitize_text_field($_POST['reference'] ?? ''),
-        'emplacement'  => sanitize_text_field($_POST['emplacement'] ?? ''),
-        'prix_achat'   => floatval($_POST['prix_achat'] ?? 0),
-        'prix_vente'   => floatval($_POST['prix_vente'] ?? 0),
-        'stock'        => intval($_POST['stock'] ?? 0),
-        'a_completer'  => isset($_POST['a_completer']) ? 1 : 0,
-        'notes'        => sanitize_textarea_field($_POST['notes'] ?? ''),
-        'description'  => sanitize_textarea_field($_POST['description'] ?? ''),
-        'date_achat'   => sanitize_text_field($_POST['date_achat'] ?? ''),
-        'image'        => '',
+        'nom'               => sanitize_text_field($_POST['nom'] ?? ''),
+        'reference'         => sanitize_text_field($_POST['reference'] ?? ''),
+        'emplacement'       => sanitize_text_field($_POST['emplacement'] ?? ''),
+        'prix_achat'        => floatval($_POST['prix_achat'] ?? 0),
+        'prix_vente'        => floatval($_POST['prix_vente'] ?? 0),
+        'prix_vente_ebay'   => !empty($_POST['prix_vente_ebay']) ? floatval($_POST['prix_vente_ebay']) : null,
+        'prix_vente_lbc'    => !empty($_POST['prix_vente_lbc']) ? floatval($_POST['prix_vente_lbc']) : null,
+        'prix_vente_vinted' => !empty($_POST['prix_vente_vinted']) ? floatval($_POST['prix_vente_vinted']) : null,
+        'prix_vente_autre'  => !empty($_POST['prix_vente_autre']) ? floatval($_POST['prix_vente_autre']) : null,
+        'stock'             => intval($_POST['stock'] ?? 0),
+        'a_completer'       => isset($_POST['a_completer']) ? 1 : 0,
+        'notes'             => sanitize_textarea_field($_POST['notes'] ?? ''),
+        'description'       => sanitize_textarea_field($_POST['description'] ?? ''),
+        'date_achat'        => sanitize_text_field($_POST['date_achat'] ?? ''),
+        'image'             => '',
     ];
 
     // Gestion image
@@ -139,8 +183,8 @@ function inventory_add_product()
 
     try {
         $sql = "INSERT INTO {$GLOBALS['wpdb']->prefix}inventaire
-                (nom, reference, emplacement, prix_achat, prix_vente, stock, a_completer, notes, description, date_achat, image)
-                VALUES (:nom, :reference, :emplacement, :prix_achat, :prix_vente, :stock, :a_completer, :notes, :description, :date_achat, :image)";
+                (nom, reference, emplacement, prix_achat, prix_vente, prix_vente_ebay, prix_vente_lbc, prix_vente_vinted, prix_vente_autre, stock, a_completer, notes, description, date_achat, image)
+                VALUES (:nom, :reference, :emplacement, :prix_achat, :prix_vente, :prix_vente_ebay, :prix_vente_lbc, :prix_vente_vinted, :prix_vente_autre, :stock, :a_completer, :notes, :description, :date_achat, :image)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($fields);
         wp_send_json_success(['id' => $pdo->lastInsertId()]);
@@ -171,17 +215,21 @@ function inventory_edit_product()
     }
 
     $fields = [
-        'nom'          => sanitize_text_field($_POST['nom'] ?? ''),
-        'reference'    => sanitize_text_field($_POST['reference'] ?? ''),
-        'emplacement'  => sanitize_text_field($_POST['emplacement'] ?? ''),
-        'prix_achat'   => floatval($_POST['prix_achat'] ?? 0),
-        'prix_vente'   => floatval($_POST['prix_vente'] ?? 0),
-        'stock'        => intval($_POST['stock'] ?? 0),
-        'a_completer'  => isset($_POST['a_completer']) ? 1 : 0,
-        'notes'        => sanitize_textarea_field($_POST['notes'] ?? ''),
-        'description'  => sanitize_textarea_field($_POST['description'] ?? ''),
-        'date_achat'   => sanitize_text_field($_POST['date_achat'] ?? ''),
-        'image'        => null,
+        'nom'               => sanitize_text_field($_POST['nom'] ?? ''),
+        'reference'         => sanitize_text_field($_POST['reference'] ?? ''),
+        'emplacement'       => sanitize_text_field($_POST['emplacement'] ?? ''),
+        'prix_achat'        => floatval($_POST['prix_achat'] ?? 0),
+        'prix_vente'        => floatval($_POST['prix_vente'] ?? 0),
+        'prix_vente_ebay'   => !empty($_POST['prix_vente_ebay']) ? floatval($_POST['prix_vente_ebay']) : null,
+        'prix_vente_lbc'    => !empty($_POST['prix_vente_lbc']) ? floatval($_POST['prix_vente_lbc']) : null,
+        'prix_vente_vinted' => !empty($_POST['prix_vente_vinted']) ? floatval($_POST['prix_vente_vinted']) : null,
+        'prix_vente_autre'  => !empty($_POST['prix_vente_autre']) ? floatval($_POST['prix_vente_autre']) : null,
+        'stock'             => intval($_POST['stock'] ?? 0),
+        'a_completer'       => isset($_POST['a_completer']) ? 1 : 0,
+        'notes'             => sanitize_textarea_field($_POST['notes'] ?? ''),
+        'description'       => sanitize_textarea_field($_POST['description'] ?? ''),
+        'date_achat'        => sanitize_text_field($_POST['date_achat'] ?? ''),
+        'image'             => null,
     ];
 
     $existingImage = esc_url_raw($_POST['existing_image'] ?? '');
@@ -217,6 +265,10 @@ function inventory_edit_product()
                     emplacement = :emplacement,
                     prix_achat = :prix_achat,
                     prix_vente = :prix_vente,
+                    prix_vente_ebay = :prix_vente_ebay,
+                    prix_vente_lbc = :prix_vente_lbc,
+                    prix_vente_vinted = :prix_vente_vinted,
+                    prix_vente_autre = :prix_vente_autre,
                     stock = :stock,
                     a_completer = :a_completer,
                     notes = :notes,
@@ -232,6 +284,10 @@ function inventory_edit_product()
             ':emplacement' => $fields['emplacement'],
             ':prix_achat' => $fields['prix_achat'],
             ':prix_vente' => $fields['prix_vente'],
+            ':prix_vente_ebay' => $fields['prix_vente_ebay'],
+            ':prix_vente_lbc' => $fields['prix_vente_lbc'],
+            ':prix_vente_vinted' => $fields['prix_vente_vinted'],
+            ':prix_vente_autre' => $fields['prix_vente_autre'],
             ':stock' => $fields['stock'],
             ':a_completer' => $fields['a_completer'],
             ':notes' => $fields['notes'],
@@ -270,7 +326,7 @@ function inventory_update_product()
         return;
     }
 
-    $allowed = ['nom', 'reference', 'emplacement', 'prix_achat', 'prix_vente', 'stock', 'a_completer', 'notes', 'description', 'date_achat'];
+    $allowed = ['nom', 'reference', 'emplacement', 'prix_achat', 'prix_vente', 'prix_vente_ebay', 'prix_vente_lbc', 'prix_vente_vinted', 'prix_vente_autre', 'stock', 'a_completer', 'notes', 'description', 'date_achat'];
     if (!in_array($field, $allowed, true)) {
         wp_send_json_error(['message' => 'Champ non autorisé.']);
         return;
@@ -320,10 +376,15 @@ function inventory_delete_product()
 add_action('wp_ajax_delete_product', 'inventory_delete_product');
 
 /**
- * Initialisation à l’activation
+ * Initialisation à l'activation
  */
 function inventory_activate()
 {
     inventory_db_ensure_table();
 }
 register_activation_hook(__FILE__, 'inventory_activate');
+
+/**
+ * Vérification de la table à chaque chargement (pour les migrations)
+ */
+add_action('after_setup_theme', 'inventory_db_ensure_table');

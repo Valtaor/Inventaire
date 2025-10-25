@@ -36,7 +36,10 @@
     var locationInput = document.getElementById('product-location');
     var stockInput = document.getElementById('product-stock');
     var purchaseInput = document.getElementById('product-prix-achat');
-    var saleInput = document.getElementById('product-prix-vente');
+    var saleEbayInput = document.getElementById('product-prix-vente-ebay');
+    var saleLbcInput = document.getElementById('product-prix-vente-lbc');
+    var saleVintedInput = document.getElementById('product-prix-vente-vinted');
+    var saleAutreInput = document.getElementById('product-prix-vente-autre');
     var dateInput = document.getElementById('product-date');
     var notesInput = document.getElementById('product-notes');
     var descriptionInput = document.getElementById('product-description');
@@ -234,15 +237,27 @@
       }
 
       var purchase = Number.parseFloat(product.prix_achat || 0);
-      var sale = Number.parseFloat(product.prix_vente || 0);
 
       var purchaseItem = createTextElement('li', 'inventory-meta-item', formatCurrency(purchase));
       purchaseItem.setAttribute('data-meta-label', i18n.labelPurchase || 'Achat');
       list.appendChild(purchaseItem);
 
-      var saleItem = createTextElement('li', 'inventory-meta-item', formatCurrency(sale));
-      saleItem.setAttribute('data-meta-label', i18n.labelSale || 'Vente');
-      list.appendChild(saleItem);
+      // Affichage des prix de vente par plateforme
+      var platforms = [
+        { key: 'prix_vente_ebay', label: 'eBay' },
+        { key: 'prix_vente_lbc', label: 'LBC' },
+        { key: 'prix_vente_vinted', label: 'Vinted' },
+        { key: 'prix_vente_autre', label: 'Autre' }
+      ];
+
+      platforms.forEach(function(platform) {
+        var price = product[platform.key];
+        if (price !== null && price !== undefined && price !== '' && Number.parseFloat(price) > 0) {
+          var priceItem = createTextElement('li', 'inventory-meta-item', formatCurrency(Number.parseFloat(price)));
+          priceItem.setAttribute('data-meta-label', platform.label);
+          list.appendChild(priceItem);
+        }
+      });
 
       if (product.date_achat) {
         var dateItem = createTextElement('li', 'inventory-meta-item', formatDate(product.date_achat));
@@ -358,6 +373,22 @@
       }, 0);
     }
 
+    function getAverageSalePrice(product) {
+      var prices = [
+        product.prix_vente_ebay,
+        product.prix_vente_lbc,
+        product.prix_vente_vinted,
+        product.prix_vente_autre
+      ].filter(function(p) {
+        return p !== null && p !== undefined && p !== '' && Number.parseFloat(p) > 0;
+      }).map(function(p) {
+        return Number.parseFloat(p);
+      });
+
+      if (prices.length === 0) return 0;
+      return prices.reduce(function(a, b) { return a + b; }, 0) / prices.length;
+    }
+
     function updateStats() {
       var totalArticles = sum(allProducts, function (item) {
         return item.stock;
@@ -366,7 +397,7 @@
         return Number(item.stock) <= 0;
       }).length;
       var totalSale = sum(allProducts, function (item) {
-        return Number(item.prix_vente) * Number(item.stock || 0);
+        return getAverageSalePrice(item) * Number(item.stock || 0);
       });
       var totalPurchase = sum(allProducts, function (item) {
         return Number(item.prix_achat) * Number(item.stock || 0);
@@ -661,8 +692,17 @@
       if (purchaseInput) {
         purchaseInput.value = product.prix_achat !== null && product.prix_achat !== undefined ? String(product.prix_achat) : '';
       }
-      if (saleInput) {
-        saleInput.value = product.prix_vente !== null && product.prix_vente !== undefined ? String(product.prix_vente) : '';
+      if (saleEbayInput) {
+        saleEbayInput.value = product.prix_vente_ebay !== null && product.prix_vente_ebay !== undefined ? String(product.prix_vente_ebay) : '';
+      }
+      if (saleLbcInput) {
+        saleLbcInput.value = product.prix_vente_lbc !== null && product.prix_vente_lbc !== undefined ? String(product.prix_vente_lbc) : '';
+      }
+      if (saleVintedInput) {
+        saleVintedInput.value = product.prix_vente_vinted !== null && product.prix_vente_vinted !== undefined ? String(product.prix_vente_vinted) : '';
+      }
+      if (saleAutreInput) {
+        saleAutreInput.value = product.prix_vente_autre !== null && product.prix_vente_autre !== undefined ? String(product.prix_vente_autre) : '';
       }
       if (dateInput) {
         dateInput.value = product.date_achat || '';
@@ -868,7 +908,7 @@
         showToast('Aucune donnée à exporter.', 'error');
         return;
       }
-      var header = ['ID', 'Nom', 'Référence', 'Casier', 'Prix achat', 'Prix vente', 'Stock', 'À compléter', 'Notes', 'Description', 'Date achat', 'Image'];
+      var header = ['ID', 'Nom', 'Référence', 'Casier', 'Prix achat', 'Prix vente eBay', 'Prix vente LBC', 'Prix vente Vinted', 'Prix vente Autre', 'Stock', 'À compléter', 'Notes', 'Description', 'Date achat', 'Image'];
       var body = rows.map(function (product) {
         return [
           product.id,
@@ -876,7 +916,10 @@
           product.reference,
           product.emplacement,
           product.prix_achat,
-          product.prix_vente,
+          product.prix_vente_ebay,
+          product.prix_vente_lbc,
+          product.prix_vente_vinted,
+          product.prix_vente_autre,
           product.stock,
           product.a_completer,
           product.notes,
