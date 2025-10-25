@@ -150,9 +150,26 @@ get_header();
                                 <label for="product-prix-achat" class="form-label"><?php esc_html_e('Prix d\'achat (€)', 'uncode'); ?></label>
                                 <input type="number" step="0.01" min="0" id="product-prix-achat" name="prix_achat" class="form-control" placeholder="0.00" />
                             </div>
-                            <div class="form-group">
-                                <label for="product-prix-vente" class="form-label"><?php esc_html_e('Prix de vente (€)', 'uncode'); ?></label>
-                                <input type="number" step="0.01" min="0" id="product-prix-vente" name="prix_vente" class="form-control" placeholder="0.00" />
+                            <div class="form-group full-width">
+                                <label class="form-label"><?php esc_html_e('Prix de vente par plateforme (€)', 'uncode'); ?></label>
+                                <div class="price-grid">
+                                    <div class="price-item">
+                                        <label for="product-prix-vente-ebay" class="price-label">eBay</label>
+                                        <input type="number" step="0.01" min="0" id="product-prix-vente-ebay" name="prix_vente_ebay" class="form-control" placeholder="0.00" />
+                                    </div>
+                                    <div class="price-item">
+                                        <label for="product-prix-vente-lbc" class="price-label">LeBonCoin</label>
+                                        <input type="number" step="0.01" min="0" id="product-prix-vente-lbc" name="prix_vente_lbc" class="form-control" placeholder="0.00" />
+                                    </div>
+                                    <div class="price-item">
+                                        <label for="product-prix-vente-vinted" class="price-label">Vinted</label>
+                                        <input type="number" step="0.01" min="0" id="product-prix-vente-vinted" name="prix_vente_vinted" class="form-control" placeholder="0.00" />
+                                    </div>
+                                    <div class="price-item">
+                                        <label for="product-prix-vente-autre" class="price-label">Autre</label>
+                                        <input type="number" step="0.01" min="0" id="product-prix-vente-autre" name="prix_vente_autre" class="form-control" placeholder="0.00" />
+                                    </div>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="product-date" class="form-label"><?php esc_html_e('Date d\'achat', 'uncode'); ?></label>
