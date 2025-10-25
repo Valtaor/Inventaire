@@ -860,3 +860,144 @@
     min-width: 720px;
   }
 }
+
+/* Modal de vente */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-dialog {
+  background: var(--inventory-color-surface);
+  border-radius: var(--inventory-radius-lg);
+  box-shadow: var(--inventory-shadow-md);
+  max-width: 600px;
+  width: calc(100% - 32px);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideUp 0.3s ease-out;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--inventory-color-border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--inventory-color-text);
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--inventory-color-surface-muted);
+  color: var(--inventory-color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: var(--inventory-color-primary-soft);
+  color: var(--inventory-color-primary);
+}
+
+.modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-body {
+  padding: 28px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--inventory-color-border);
+}
+
+.product-info-display {
+  background: var(--inventory-color-surface-muted);
+  padding: 16px;
+  border-radius: var(--inventory-radius-sm);
+  border: 1px solid var(--inventory-color-border);
+}
+
+.product-info-display strong {
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+  color: var(--inventory-color-text);
+}
+
+.product-info-display small {
+  color: var(--inventory-color-text-muted);
+}
+
+.form-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--inventory-color-text-muted);
+}
+
+/* Bouton Vendre */
+.btn-sell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--inventory-radius-sm);
+  border: none;
+  background: var(--inventory-color-success);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sell:hover {
+  background: #2f9070;
+  transform: translateY(-1px);
+}
+
+.btn-sell svg {
+  width: 16px;
+  height: 16px;
+}
