@@ -1026,6 +1026,208 @@
     window.showToast = showToast;
     window.fetchProducts = fetchProducts;
 
+    // ========================================
+    // Gestion du menu de navigation latéral
+    // ========================================
+    var sidebar = document.getElementById('sidebarNav');
+    var sidebarToggle = document.getElementById('sidebarToggle');
+    var sidebarLinks = document.querySelectorAll('.sidebar-link');
+    var inventoryPage = document.querySelector('.inventory-page');
+
+    // Toggle sidebar
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', function () {
+        if (sidebar) {
+          sidebar.classList.toggle('collapsed');
+        }
+        if (inventoryPage) {
+          inventoryPage.classList.toggle('sidebar-collapsed');
+        }
+        // Sauvegarder l'état dans localStorage
+        try {
+          localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+        } catch (error) {
+          // Ignorer les erreurs de localStorage
+        }
+      });
+    }
+
+    // Restaurer l'état du sidebar
+    try {
+      var sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+      if (sidebarCollapsed) {
+        if (sidebar) {
+          sidebar.classList.add('collapsed');
+        }
+        if (inventoryPage) {
+          inventoryPage.classList.add('sidebar-collapsed');
+        }
+      }
+    } catch (error) {
+      // Ignorer les erreurs de localStorage
+    }
+
+    // Gestion des liens de navigation
+    sidebarLinks.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        // Sauvegarder les données du formulaire avant la navigation
+        saveFormData();
+
+        // Mettre à jour les liens actifs
+        sidebarLinks.forEach(function (l) {
+          l.classList.remove('active');
+        });
+        link.classList.add('active');
+
+        // Naviguer vers la section
+        var sectionId = link.getAttribute('data-section');
+        var targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+          targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Fermer le menu en mode mobile
+        if (window.innerWidth <= 992 && sidebar) {
+          sidebar.classList.remove('mobile-open');
+        }
+      });
+    });
+
+    // ========================================
+    // Sauvegarde automatique du formulaire
+    // ========================================
+    var formFieldsToSave = [
+      'product-name',
+      'product-reference',
+      'product-location',
+      'product-stock',
+      'product-prix-achat',
+      'product-prix-vente-ebay',
+      'product-prix-vente-lbc',
+      'product-prix-vente-vinted',
+      'product-prix-vente-autre',
+      'product-date',
+      'product-notes',
+      'product-description',
+      'product-incomplete'
+    ];
+
+    function saveFormData() {
+      if (!form || formMode === 'edit') {
+        return; // Ne pas sauvegarder en mode édition
+      }
+
+      try {
+        var formData = {};
+        formFieldsToSave.forEach(function (fieldId) {
+          var field = document.getElementById(fieldId);
+          if (field) {
+            if (field.type === 'checkbox') {
+              formData[fieldId] = field.checked;
+            } else {
+              formData[fieldId] = field.value;
+            }
+          }
+        });
+        localStorage.setItem('inventory-form-draft', JSON.stringify(formData));
+      } catch (error) {
+        // Ignorer les erreurs de localStorage
+      }
+    }
+
+    function loadFormData() {
+      if (!form || formMode === 'edit') {
+        return; // Ne pas charger en mode édition
+      }
+
+      try {
+        var savedData = localStorage.getItem('inventory-form-draft');
+        if (savedData) {
+          var formData = JSON.parse(savedData);
+          formFieldsToSave.forEach(function (fieldId) {
+            var field = document.getElementById(fieldId);
+            if (field && formData[fieldId] !== undefined) {
+              if (field.type === 'checkbox') {
+                field.checked = formData[fieldId];
+              } else if (formData[fieldId]) {
+                field.value = formData[fieldId];
+              }
+            }
+          });
+        }
+      } catch (error) {
+        // Ignorer les erreurs de localStorage
+      }
+    }
+
+    function clearFormData() {
+      try {
+        localStorage.removeItem('inventory-form-draft');
+      } catch (error) {
+        // Ignorer les erreurs de localStorage
+      }
+    }
+
+    // Charger les données sauvegardées au démarrage
+    loadFormData();
+
+    // Sauvegarder automatiquement lors de la saisie
+    if (form) {
+      formFieldsToSave.forEach(function (fieldId) {
+        var field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('input', function () {
+            if (formMode !== 'edit') {
+              saveFormData();
+            }
+          });
+          if (field.type === 'checkbox') {
+            field.addEventListener('change', function () {
+              if (formMode !== 'edit') {
+                saveFormData();
+              }
+            });
+          }
+        }
+      });
+    }
+
+    // Effacer les données sauvegardées après soumission réussie
+    var originalSubmitForm = submitForm;
+    submitForm = function(event) {
+      originalSubmitForm(event);
+      // Ajouter un délai pour s'assurer que la soumission est réussie
+      window.setTimeout(function() {
+        if (formMode === 'create') {
+          clearFormData();
+        }
+      }, 1000);
+    };
+
+    // Remplacer la fonction submitForm dans le formulaire
+    if (form) {
+      form.removeEventListener('submit', originalSubmitForm);
+      form.addEventListener('submit', submitForm);
+    }
+
+    // En mode mobile, ajouter un bouton burger
+    if (window.innerWidth <= 992) {
+      var mobileBurger = document.createElement('button');
+      mobileBurger.className = 'mobile-menu-toggle';
+      mobileBurger.setAttribute('aria-label', 'Menu');
+      mobileBurger.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>';
+
+      mobileBurger.addEventListener('click', function () {
+        if (sidebar) {
+          sidebar.classList.toggle('mobile-open');
+        }
+      });
+
+      document.body.appendChild(mobileBurger);
+    }
+
     fetchProducts();
   });
 })();
