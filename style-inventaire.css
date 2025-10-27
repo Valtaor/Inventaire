@@ -1115,7 +1115,7 @@
   border-radius: var(--inventory-radius-sm);
   border: none;
   background: var(--inventory-color-surface-muted);
-  color: var(--inventory-color-text);
+  color: #000000;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1125,7 +1125,7 @@
 
 .sidebar-toggle:hover {
   background: var(--inventory-color-primary-soft);
-  color: var(--inventory-color-primary);
+  color: #000000;
 }
 
 .sidebar-toggle svg {
@@ -1149,7 +1149,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  color: var(--inventory-color-text-muted);
+  color: #000000;
   text-decoration: none;
   transition: all 0.2s ease;
   position: relative;
@@ -1157,12 +1157,12 @@
 
 .sidebar-link:hover {
   background: var(--inventory-color-surface-muted);
-  color: var(--inventory-color-text);
+  color: #000000;
 }
 
 .sidebar-link.active {
   background: var(--inventory-color-primary-soft);
-  color: var(--inventory-color-primary);
+  color: #000000;
   font-weight: 600;
 }
 
@@ -1182,10 +1182,13 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+  color: #000000;
+  stroke: #000000;
 }
 
 .sidebar-link span {
   font-size: 0.95rem;
+  color: #000000;
 }
 
 /* Ajustement du contenu principal quand le menu est visible */
@@ -1231,7 +1234,7 @@
     border-radius: 50%;
     border: none;
     background: var(--inventory-color-surface);
-    color: var(--inventory-color-text);
+    color: #000000;
     box-shadow: var(--inventory-shadow-sm);
     cursor: pointer;
     z-index: 999;
@@ -1243,5 +1246,7 @@
   .mobile-menu-toggle svg {
     width: 20px;
     height: 20px;
+    color: #000000;
+    stroke: #000000;
   }
 }
