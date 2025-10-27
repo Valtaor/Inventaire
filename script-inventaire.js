@@ -1026,6 +1026,263 @@
     window.showToast = showToast;
     window.fetchProducts = fetchProducts;
 
+    // ========================================
+    // Gestion du menu de navigation latéral
+    // ========================================
+    var sidebar = document.getElementById('sidebarNav');
+    var sidebarToggle = document.getElementById('sidebarToggle');
+    var sidebarLinks = document.querySelectorAll('.sidebar-link');
+    var inventoryPage = document.querySelector('.inventory-page');
+
+    // Toggle sidebar
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', function () {
+        if (sidebar) {
+          sidebar.classList.toggle('collapsed');
+        }
+        if (inventoryPage) {
+          inventoryPage.classList.toggle('sidebar-collapsed');
+        }
+        // Sauvegarder l'état via AJAX
+        var data = new FormData();
+        data.append('action', 'save_sidebar_state');
+        data.append('collapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+        fetch(ajaxUrl, {
+          method: 'POST',
+          body: data,
+          credentials: 'same-origin'
+        }).catch(function () {
+          // Ignorer les erreurs
+        });
+      });
+    }
+
+    // Restaurer l'état du sidebar via AJAX
+    var sidebarUrl = ajaxUrl;
+    if (sidebarUrl.indexOf('?') === -1) {
+      sidebarUrl += '?action=get_sidebar_state';
+    } else {
+      sidebarUrl += '&action=get_sidebar_state';
+    }
+
+    fetch(sidebarUrl, {
+      credentials: 'same-origin'
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (json) {
+        if (json && json.success && json.data && json.data.collapsed === '1') {
+          if (sidebar) {
+            sidebar.classList.add('collapsed');
+          }
+          if (inventoryPage) {
+            inventoryPage.classList.add('sidebar-collapsed');
+          }
+        }
+      })
+      .catch(function () {
+        // Ignorer les erreurs
+      });
+
+    // Gestion des liens de navigation
+    sidebarLinks.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        // Sauvegarder les données du formulaire avant la navigation
+        saveFormData();
+
+        // Mettre à jour les liens actifs
+        sidebarLinks.forEach(function (l) {
+          l.classList.remove('active');
+        });
+        link.classList.add('active');
+
+        // Naviguer vers la section
+        var sectionId = link.getAttribute('data-section');
+        var targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+          targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Fermer le menu en mode mobile
+        if (window.innerWidth <= 992 && sidebar) {
+          sidebar.classList.remove('mobile-open');
+        }
+      });
+    });
+
+    // ========================================
+    // Sauvegarde automatique du formulaire
+    // ========================================
+    var formFieldsToSave = [
+      'product-name',
+      'product-reference',
+      'product-location',
+      'product-stock',
+      'product-prix-achat',
+      'product-prix-vente-ebay',
+      'product-prix-vente-lbc',
+      'product-prix-vente-vinted',
+      'product-prix-vente-autre',
+      'product-date',
+      'product-notes',
+      'product-description',
+      'product-incomplete'
+    ];
+
+    function saveFormData() {
+      if (!form || formMode === 'edit') {
+        return; // Ne pas sauvegarder en mode édition
+      }
+
+      var formData = {};
+      formFieldsToSave.forEach(function (fieldId) {
+        var field = document.getElementById(fieldId);
+        if (field) {
+          if (field.type === 'checkbox') {
+            formData[fieldId] = field.checked;
+          } else {
+            formData[fieldId] = field.value;
+          }
+        }
+      });
+
+      var data = new FormData();
+      data.append('action', 'save_draft');
+      data.append('form_data', JSON.stringify(formData));
+
+      fetch(ajaxUrl, {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin'
+      }).catch(function (error) {
+        // Ignorer les erreurs silencieusement
+        if (window.console && console.error) {
+          console.error('Erreur sauvegarde brouillon:', error);
+        }
+      });
+    }
+
+    function loadFormData() {
+      if (!form || formMode === 'edit') {
+        return; // Ne pas charger en mode édition
+      }
+
+      var url = ajaxUrl;
+      if (url.indexOf('?') === -1) {
+        url += '?action=get_draft';
+      } else {
+        url += '&action=get_draft';
+      }
+
+      fetch(url, {
+        credentials: 'same-origin'
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('Network error');
+          }
+          return response.json();
+        })
+        .then(function (json) {
+          if (json && json.success && json.data && json.data.data) {
+            var formData = JSON.parse(json.data.data);
+            formFieldsToSave.forEach(function (fieldId) {
+              var field = document.getElementById(fieldId);
+              if (field && formData[fieldId] !== undefined) {
+                if (field.type === 'checkbox') {
+                  field.checked = formData[fieldId];
+                } else if (formData[fieldId]) {
+                  field.value = formData[fieldId];
+                }
+              }
+            });
+          }
+        })
+        .catch(function (error) {
+          // Ignorer les erreurs silencieusement
+          if (window.console && console.error) {
+            console.error('Erreur chargement brouillon:', error);
+          }
+        });
+    }
+
+    function clearFormData() {
+      var data = new FormData();
+      data.append('action', 'delete_draft');
+
+      fetch(ajaxUrl, {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin'
+      }).catch(function (error) {
+        // Ignorer les erreurs silencieusement
+        if (window.console && console.error) {
+          console.error('Erreur suppression brouillon:', error);
+        }
+      });
+    }
+
+    // Charger les données sauvegardées au démarrage
+    loadFormData();
+
+    // Sauvegarder automatiquement lors de la saisie
+    if (form) {
+      formFieldsToSave.forEach(function (fieldId) {
+        var field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('input', function () {
+            if (formMode !== 'edit') {
+              saveFormData();
+            }
+          });
+          if (field.type === 'checkbox') {
+            field.addEventListener('change', function () {
+              if (formMode !== 'edit') {
+                saveFormData();
+              }
+            });
+          }
+        }
+      });
+    }
+
+    // Effacer les données sauvegardées après soumission réussie
+    var originalSubmitForm = submitForm;
+    submitForm = function(event) {
+      originalSubmitForm(event);
+      // Ajouter un délai pour s'assurer que la soumission est réussie
+      window.setTimeout(function() {
+        if (formMode === 'create') {
+          clearFormData();
+        }
+      }, 1000);
+    };
+
+    // Remplacer la fonction submitForm dans le formulaire
+    if (form) {
+      form.removeEventListener('submit', originalSubmitForm);
+      form.addEventListener('submit', submitForm);
+    }
+
+    // En mode mobile, ajouter un bouton burger
+    if (window.innerWidth <= 992) {
+      var mobileBurger = document.createElement('button');
+      mobileBurger.className = 'mobile-menu-toggle';
+      mobileBurger.setAttribute('aria-label', 'Menu');
+      mobileBurger.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>';
+
+      mobileBurger.addEventListener('click', function () {
+        if (sidebar) {
+          sidebar.classList.toggle('mobile-open');
+        }
+      });
+
+      document.body.appendChild(mobileBurger);
+    }
+
     fetchProducts();
   });
 })();

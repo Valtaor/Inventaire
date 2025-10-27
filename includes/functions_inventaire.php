@@ -70,6 +70,9 @@ function inventory_db_ensure_table()
 
     // Création de la table ventes
     inventory_db_ensure_sales_table();
+
+    // Création de la table brouillons
+    inventory_db_ensure_drafts_table();
 }
 
 /**
@@ -97,6 +100,26 @@ function inventory_db_ensure_sales_table()
         INDEX idx_produit_id (produit_id),
         INDEX idx_date_vente (date_vente),
         INDEX idx_plateforme (plateforme)
+    ) $charset;";
+
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta($sql);
+}
+
+/**
+ * Vérification de la table brouillons
+ */
+function inventory_db_ensure_drafts_table()
+{
+    global $wpdb;
+    $table = $wpdb->prefix . 'inventaire_drafts';
+    $charset = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE IF NOT EXISTS $table (
+        user_id BIGINT UNSIGNED NOT NULL,
+        form_data LONGTEXT NOT NULL,
+        date_modified DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id)
     ) $charset;";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -618,6 +641,164 @@ function inventory_get_sales_stats()
 }
 add_action('wp_ajax_get_sales_stats', 'inventory_get_sales_stats');
 add_action('wp_ajax_nopriv_get_sales_stats', 'inventory_get_sales_stats');
+
+/**
+ * Sauvegarder le brouillon du formulaire
+ */
+function inventory_save_draft()
+{
+    // Vérifier que l'utilisateur est connecté
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Non autorisé']);
+        return;
+    }
+
+    $pdo = inventory_db_get_pdo();
+    if (!$pdo) {
+        wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $form_data = isset($_POST['form_data']) ? $_POST['form_data'] : '';
+
+    if (empty($form_data)) {
+        wp_send_json_error(['message' => 'Données manquantes']);
+        return;
+    }
+
+    try {
+        $table = $GLOBALS['wpdb']->prefix . 'inventaire_drafts';
+
+        // Vérifier si un brouillon existe déjà pour cet utilisateur
+        $stmt = $pdo->prepare("SELECT user_id FROM $table WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $exists = $stmt->fetch();
+
+        if ($exists) {
+            // Mettre à jour
+            $stmt = $pdo->prepare("UPDATE $table SET form_data = ?, date_modified = NOW() WHERE user_id = ?");
+            $stmt->execute([$form_data, $user_id]);
+        } else {
+            // Insérer
+            $stmt = $pdo->prepare("INSERT INTO $table (user_id, form_data, date_modified) VALUES (?, ?, NOW())");
+            $stmt->execute([$user_id, $form_data]);
+        }
+
+        wp_send_json_success(['message' => 'Brouillon sauvegardé']);
+        return;
+    } catch (PDOException $e) {
+        wp_send_json_error(['message' => 'Erreur : ' . $e->getMessage()]);
+        return;
+    }
+}
+add_action('wp_ajax_save_draft', 'inventory_save_draft');
+
+/**
+ * Récupérer le brouillon du formulaire
+ */
+function inventory_get_draft()
+{
+    // Vérifier que l'utilisateur est connecté
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Non autorisé']);
+        return;
+    }
+
+    $pdo = inventory_db_get_pdo();
+    if (!$pdo) {
+        wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+
+    try {
+        $table = $GLOBALS['wpdb']->prefix . 'inventaire_drafts';
+        $stmt = $pdo->prepare("SELECT form_data FROM $table WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $result = $stmt->fetch();
+
+        if ($result && !empty($result['form_data'])) {
+            wp_send_json_success(['data' => $result['form_data']]);
+        } else {
+            wp_send_json_success(['data' => null]);
+        }
+        return;
+    } catch (PDOException $e) {
+        wp_send_json_error(['message' => 'Erreur : ' . $e->getMessage()]);
+        return;
+    }
+}
+add_action('wp_ajax_get_draft', 'inventory_get_draft');
+
+/**
+ * Supprimer le brouillon du formulaire
+ */
+function inventory_delete_draft()
+{
+    // Vérifier que l'utilisateur est connecté
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Non autorisé']);
+        return;
+    }
+
+    $pdo = inventory_db_get_pdo();
+    if (!$pdo) {
+        wp_send_json_error(['message' => 'Connexion à la base impossible']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+
+    try {
+        $table = $GLOBALS['wpdb']->prefix . 'inventaire_drafts';
+        $stmt = $pdo->prepare("DELETE FROM $table WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+
+        wp_send_json_success(['message' => 'Brouillon supprimé']);
+        return;
+    } catch (PDOException $e) {
+        wp_send_json_error(['message' => 'Erreur : ' . $e->getMessage()]);
+        return;
+    }
+}
+add_action('wp_ajax_delete_draft', 'inventory_delete_draft');
+
+/**
+ * Sauvegarder l'état du sidebar
+ */
+function inventory_save_sidebar_state()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Non autorisé']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $collapsed = isset($_POST['collapsed']) ? sanitize_text_field($_POST['collapsed']) : '0';
+
+    update_user_meta($user_id, 'inventory_sidebar_collapsed', $collapsed);
+    wp_send_json_success(['message' => 'État sauvegardé']);
+}
+add_action('wp_ajax_save_sidebar_state', 'inventory_save_sidebar_state');
+
+/**
+ * Récupérer l'état du sidebar
+ */
+function inventory_get_sidebar_state()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Non autorisé']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $collapsed = get_user_meta($user_id, 'inventory_sidebar_collapsed', true);
+
+    wp_send_json_success(['collapsed' => $collapsed]);
+}
+add_action('wp_ajax_get_sidebar_state', 'inventory_get_sidebar_state');
 
 /**
  * Vérification de la table à chaque chargement (pour les migrations)
