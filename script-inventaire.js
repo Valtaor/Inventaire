@@ -1043,29 +1043,47 @@
         if (inventoryPage) {
           inventoryPage.classList.toggle('sidebar-collapsed');
         }
-        // Sauvegarder l'état dans localStorage
-        try {
-          localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
-        } catch (error) {
-          // Ignorer les erreurs de localStorage
-        }
+        // Sauvegarder l'état via AJAX
+        var data = new FormData();
+        data.append('action', 'save_sidebar_state');
+        data.append('collapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+        fetch(ajaxUrl, {
+          method: 'POST',
+          body: data,
+          credentials: 'same-origin'
+        }).catch(function () {
+          // Ignorer les erreurs
+        });
       });
     }
 
-    // Restaurer l'état du sidebar
-    try {
-      var sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-      if (sidebarCollapsed) {
-        if (sidebar) {
-          sidebar.classList.add('collapsed');
-        }
-        if (inventoryPage) {
-          inventoryPage.classList.add('sidebar-collapsed');
-        }
-      }
-    } catch (error) {
-      // Ignorer les erreurs de localStorage
+    // Restaurer l'état du sidebar via AJAX
+    var sidebarUrl = ajaxUrl;
+    if (sidebarUrl.indexOf('?') === -1) {
+      sidebarUrl += '?action=get_sidebar_state';
+    } else {
+      sidebarUrl += '&action=get_sidebar_state';
     }
+
+    fetch(sidebarUrl, {
+      credentials: 'same-origin'
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (json) {
+        if (json && json.success && json.data && json.data.collapsed === '1') {
+          if (sidebar) {
+            sidebar.classList.add('collapsed');
+          }
+          if (inventoryPage) {
+            inventoryPage.classList.add('sidebar-collapsed');
+          }
+        }
+      })
+      .catch(function () {
+        // Ignorer les erreurs
+      });
 
     // Gestion des liens de navigation
     sidebarLinks.forEach(function (link) {
@@ -1119,22 +1137,32 @@
         return; // Ne pas sauvegarder en mode édition
       }
 
-      try {
-        var formData = {};
-        formFieldsToSave.forEach(function (fieldId) {
-          var field = document.getElementById(fieldId);
-          if (field) {
-            if (field.type === 'checkbox') {
-              formData[fieldId] = field.checked;
-            } else {
-              formData[fieldId] = field.value;
-            }
+      var formData = {};
+      formFieldsToSave.forEach(function (fieldId) {
+        var field = document.getElementById(fieldId);
+        if (field) {
+          if (field.type === 'checkbox') {
+            formData[fieldId] = field.checked;
+          } else {
+            formData[fieldId] = field.value;
           }
-        });
-        localStorage.setItem('inventory-form-draft', JSON.stringify(formData));
-      } catch (error) {
-        // Ignorer les erreurs de localStorage
-      }
+        }
+      });
+
+      var data = new FormData();
+      data.append('action', 'save_draft');
+      data.append('form_data', JSON.stringify(formData));
+
+      fetch(ajaxUrl, {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin'
+      }).catch(function (error) {
+        // Ignorer les erreurs silencieusement
+        if (window.console && console.error) {
+          console.error('Erreur sauvegarde brouillon:', error);
+        }
+      });
     }
 
     function loadFormData() {
@@ -1142,32 +1170,59 @@
         return; // Ne pas charger en mode édition
       }
 
-      try {
-        var savedData = localStorage.getItem('inventory-form-draft');
-        if (savedData) {
-          var formData = JSON.parse(savedData);
-          formFieldsToSave.forEach(function (fieldId) {
-            var field = document.getElementById(fieldId);
-            if (field && formData[fieldId] !== undefined) {
-              if (field.type === 'checkbox') {
-                field.checked = formData[fieldId];
-              } else if (formData[fieldId]) {
-                field.value = formData[fieldId];
-              }
-            }
-          });
-        }
-      } catch (error) {
-        // Ignorer les erreurs de localStorage
+      var url = ajaxUrl;
+      if (url.indexOf('?') === -1) {
+        url += '?action=get_draft';
+      } else {
+        url += '&action=get_draft';
       }
+
+      fetch(url, {
+        credentials: 'same-origin'
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('Network error');
+          }
+          return response.json();
+        })
+        .then(function (json) {
+          if (json && json.success && json.data && json.data.data) {
+            var formData = JSON.parse(json.data.data);
+            formFieldsToSave.forEach(function (fieldId) {
+              var field = document.getElementById(fieldId);
+              if (field && formData[fieldId] !== undefined) {
+                if (field.type === 'checkbox') {
+                  field.checked = formData[fieldId];
+                } else if (formData[fieldId]) {
+                  field.value = formData[fieldId];
+                }
+              }
+            });
+          }
+        })
+        .catch(function (error) {
+          // Ignorer les erreurs silencieusement
+          if (window.console && console.error) {
+            console.error('Erreur chargement brouillon:', error);
+          }
+        });
     }
 
     function clearFormData() {
-      try {
-        localStorage.removeItem('inventory-form-draft');
-      } catch (error) {
-        // Ignorer les erreurs de localStorage
-      }
+      var data = new FormData();
+      data.append('action', 'delete_draft');
+
+      fetch(ajaxUrl, {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin'
+      }).catch(function (error) {
+        // Ignorer les erreurs silencieusement
+        if (window.console && console.error) {
+          console.error('Erreur suppression brouillon:', error);
+        }
+      });
     }
 
     // Charger les données sauvegardées au démarrage
